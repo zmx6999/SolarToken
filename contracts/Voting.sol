@@ -8,6 +8,9 @@ interface SolarTokenInterface {
 
     function transfer(address _to, uint256 _value) public returns (bool);
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool);
+
+    function voterReward() public view returns (uint256);
+    function mintToken(address _owner, uint256 _value) public returns (bool);
 }
 
 contract Voting {
@@ -84,15 +87,23 @@ contract Voting {
 
     function _finish(uint _result) internal notFinish {
         result = _result;
-        refund();
+        refund(_result);
     }
 
-    function refund() internal {
+    function refund(uint _result) internal {
         uint i = 0;
         for ( ; i < voterList.length; ) {
             address voter = voterList[i];
             solarToken.transfer(voter, deposit[voter]);
+            rewardVoter(voter, _result);
             i = SafeMath.add(i, 1);
+        }
+    }
+
+    function rewardVoter(address voter, uint _result) internal {
+        if (voteOption[voter] == _result) {
+            uint voterReward = solarToken.voterReward();
+            solarToken.mintToken(voter, voterReward);
         }
     }
 

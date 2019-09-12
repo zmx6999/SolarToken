@@ -4,6 +4,7 @@ interface SolarTokenImplInterface {
     function transfer(address _from, address _to, uint256 _value) public returns (bool);
     function transferFrom(address _spender, address _from, address _to, uint256 _value) public returns (bool);
     function approve(address _owner, address _spender, uint256 _value) public returns (bool);
+    function mintToken(address _sender, address _owner, uint256 _value) public returns (bool);
 }
 
 interface VotingFactoryInterface {
@@ -40,7 +41,6 @@ contract SolarTokenUpgrade {
         solarTokenImpl = SolarTokenImplInterface(address(0));
         votingFactory = VotingFactoryInterface(_votingFactoryAddr);
 
-        implCreatorIncome = 0;
         implCreatorIncomePeriod = 1;
     }
 
@@ -108,6 +108,20 @@ contract SolarTokenUpgrade {
         emit ConfirmImplCreatorIncomePeriodUpgradeRequest(newImplCreatorIncomePeriod);
     }
 
+    uint public voterReward;
+
+    function makeVoterRewardUpgradeRequest(string _title, string _description, uint _newVoterReward) public {
+        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmVoterRewardUpgradeRequest(uint256)", _newVoterReward);
+        votingList[voting] = true;
+        emit MakeVoterRewardUpgradeRequest(voting, _title, _description, msg.sender, _newVoterReward);
+    }
+
+    function confirmVoterRewardUpgradeRequest(uint newVoterReward) public canConfirm {
+        voterReward = newVoterReward;
+        votingList[msg.sender] = false;
+        emit ConfirmVoterRewardUpgradeRequest(newVoterReward);
+    }
+
     event MakeSolarTokenImplUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, address _newSolarTokenImplAddr);
     event ConfirmSolarTokenImplUpgradeRequest(address _newSolarTokenImplAddr);
 
@@ -116,6 +130,9 @@ contract SolarTokenUpgrade {
 
     event MakeImplCreatorIncomePeriodUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newImplCreatorIncomePeriod);
     event ConfirmImplCreatorIncomePeriodUpgradeRequest(uint _newImplCreatorIncomePeriod);
+
+    event MakeVoterRewardUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newVoterReward);
+    event ConfirmVoterRewardUpgradeRequest(uint _newVoterReward);
 }
 
 contract SolarTokenStore is SolarTokenUpgrade {
@@ -190,6 +207,10 @@ contract SolarTokenProxy is SolarTokenStore {
         return solarTokenImpl.approve(msg.sender, _spender, _value);
     }
 
+    function mintToken(address _owner, uint256 _value) public returns (bool) {
+        return solarTokenImpl.mintToken(msg.sender, _owner, _value);
+    }
+
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
     function emitTransfer(address _from, address _to, uint256 _value) public onlyImpl {
@@ -200,5 +221,11 @@ contract SolarTokenProxy is SolarTokenStore {
 
     function emitApproval(address _owner, address _spender, uint256 _value) public onlyImpl {
         emit Approval(_owner, _spender, _value);
+    }
+
+    event MintToken(address indexed _sender, address indexed _owner, uint256 _value);
+
+    function emitMintToken(address _sender, address _owner, uint256 _value) public onlyImpl {
+        emit MintToken(_sender, _owner, _value);
     }
 }

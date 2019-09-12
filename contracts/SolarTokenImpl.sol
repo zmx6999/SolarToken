@@ -19,9 +19,12 @@ interface SolarTokenProxyInterface {
 
     function emitTransfer(address _from, address _to, uint256 _value) public;
     function emitApproval(address _owner, address _spender, uint256 _value) public;
+    function emitMintToken(address _sender, address _owner, uint256 _value) public;
 
     function implCreatorIncome() public view returns (uint);
     function implCreatorIncomePeriod() public view returns (uint);
+
+    function mintToken(address _owner, uint256 _value) public returns (bool);
 }
 
 contract SolarTokenImpl {
@@ -69,7 +72,7 @@ contract SolarTokenImpl {
         _;
     }
 
-    function mintToken(address _owner, uint256 _value) public returns (bool) {
+    function mintToken(address _sender, address _owner, uint256 _value) public onlyProxy returns (bool) {
         require(_owner != address(0));
 
         tokenProxy.setBalanceOf(_owner,
@@ -79,7 +82,7 @@ contract SolarTokenImpl {
             SafeMath.add(tokenProxy.totalSupply(), _value)
         );
 
-        emit MintToken(_owner, _value);
+        tokenProxy.emitMintToken(_sender, _owner, _value);
         return true;
     }
 
@@ -191,7 +194,6 @@ contract SolarTokenImpl {
         return true;
     }
 
-    event MintToken(address indexed _owner, uint256 _value);
     event Burn(address indexed _owner, uint256 _value);
     event Freeze(address indexed _owner, uint256 _value);
     event Unfreeze(address indexed _owner, uint256 _value);
@@ -357,6 +359,6 @@ contract SolarTokenImpl {
         );
         lastWithdrawIncomeTime = withdrawTime;
 
-        return mintToken(creator, withdrawAmount);
+        return tokenProxy.mintToken(creator, withdrawAmount);
     }
 }
