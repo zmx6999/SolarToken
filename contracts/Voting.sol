@@ -226,13 +226,13 @@ contract SetAddressVoting is ExecutiveVoting {
 
     function lock(uint _value) public returns (bool) {
         lock_(_value);
-        if (percent(1) >= quorum) require(solarToken.call(setFunc, newAddress));
+        if (result == 1) require(solarToken.call(setFunc, newAddress));
         return true;
     }
 
     function vote(uint _optionId) public returns (bool) {
         vote_(_optionId);
-        if (percent(1) >= quorum) require(solarToken.call(setFunc, newAddress));
+        if (result == 1) require(solarToken.call(setFunc, newAddress));
         return true;
     }
 }
@@ -255,13 +255,13 @@ contract SetUintVoting is ExecutiveVoting {
 
     function lock(uint _value) public returns (bool) {
         lock_(_value);
-        if (percent(1) >= quorum) require(solarToken.call(setFunc, newUint));
+        if (result == 1) require(solarToken.call(setFunc, newUint));
         return true;
     }
 
     function vote(uint _optionId) public returns (bool) {
         vote_(_optionId);
-        if (percent(1) >= quorum) require(solarToken.call(setFunc, newUint));
+        if (result == 1) require(solarToken.call(setFunc, newUint));
         return true;
     }
 }

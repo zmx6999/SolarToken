@@ -7,11 +7,12 @@ contract VotingFactory {
         address _solarTokenAddr,
         string _title,
         string _description,
-        address _creator,
         uint _duration,
         bytes32[] _optionList
     ) public returns (address) {
-        return new RegularVoting(_solarTokenAddr, _title, _description, _creator, _duration, _optionList);
+        address voting = new RegularVoting(_solarTokenAddr, _title, _description, msg.sender, _duration, _optionList);
+        emit NewRegularVoting(voting, _solarTokenAddr, _title, _description, msg.sender, _duration, _optionList);
+        return voting;
     }
 
     function newSetAddressVoting(
@@ -35,4 +36,14 @@ contract VotingFactory {
     ) public returns (address) {
         return new SetUintVoting(_solarTokenAddr, _title, _description, _creator, _setFunc, _newUint);
     }
+
+    event NewRegularVoting(
+        address _votingAddr,
+        address _solarTokenAddr,
+        string _title,
+        string _description,
+        address _creator,
+        uint _duration,
+        bytes32[] _optionList
+    );
 }

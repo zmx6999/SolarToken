@@ -19,12 +19,15 @@ interface SolarTokenProxyInterface {
 
     function emitTransfer(address _from, address _to, uint256 _value) public;
     function emitApproval(address _owner, address _spender, uint256 _value) public;
-    function emitMintToken(address _sender, address _owner, uint256 _value) public;
+    function emitMintToken(address _sender, address _owner, uint256 _kwh, uint256 _value) public;
 
     function implCreatorIncome() public view returns (uint);
     function implCreatorIncomePeriod() public view returns (uint);
 
     function mintToken(address _owner, uint256 _value) public returns (bool);
+
+    function refreshTokenAmountPerKwh() public returns (bool);
+    function tokenAmountPerKwh() public view returns (uint256);
 }
 
 contract SolarTokenImpl {
@@ -72,8 +75,12 @@ contract SolarTokenImpl {
         _;
     }
 
-    function mintToken(address _sender, address _owner, uint256 _value) public onlyProxy returns (bool) {
+    function mintToken(address _sender, address _owner, uint256 _kwh) public onlyProxy returns (bool) {
         require(_owner != address(0));
+
+        tokenProxy.refreshTokenAmountPerKwh();
+        uint tokenAmountPerKwh = tokenProxy.tokenAmountPerKwh();
+        uint _value = SafeMath.mul(tokenAmountPerKwh, _kwh);
 
         tokenProxy.setBalanceOf(_owner,
             SafeMath.add(tokenProxy.balanceOf(_owner), _value)
@@ -82,7 +89,7 @@ contract SolarTokenImpl {
             SafeMath.add(tokenProxy.totalSupply(), _value)
         );
 
-        tokenProxy.emitMintToken(_sender, _owner, _value);
+        tokenProxy.emitMintToken(_sender, _owner, _kwh, _value);
         return true;
     }
 

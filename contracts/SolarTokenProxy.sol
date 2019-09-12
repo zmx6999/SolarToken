@@ -1,5 +1,7 @@
 pragma solidity ^0.4.24;
 
+import "./SafeMath.sol";
+
 interface SolarTokenImplInterface {
     function transfer(address _from, address _to, uint256 _value) public returns (bool);
     function transferFrom(address _spender, address _from, address _to, uint256 _value) public returns (bool);
@@ -32,12 +34,15 @@ contract SolarTokenUpgrade {
     VotingFactoryInterface votingFactory;
 
     address public creator;
+    uint public createTime;
+
     bool solarTokenImplInitialized;
 
     mapping(address => bool) public votingList;
 
     constructor(address _creator, address _votingFactoryAddr) {
         creator = _creator;
+        createTime = block.timestamp;
         solarTokenImpl = SolarTokenImplInterface(address(0));
         votingFactory = VotingFactoryInterface(_votingFactoryAddr);
 
@@ -81,7 +86,7 @@ contract SolarTokenUpgrade {
         emit ConfirmSolarTokenImplUpgradeRequest(newSolarTokenImplAddr);
     }
 
-    uint public implCreatorIncome;
+    uint public implCreatorIncome; // by kwh
     uint public implCreatorIncomePeriod;
 
     function makeImplCreatorIncomeUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncome) public {
@@ -108,7 +113,7 @@ contract SolarTokenUpgrade {
         emit ConfirmImplCreatorIncomePeriodUpgradeRequest(newImplCreatorIncomePeriod);
     }
 
-    uint public voterReward;
+    uint public voterReward; // by kwh
 
     function makeVoterRewardUpgradeRequest(string _title, string _description, uint _newVoterReward) public {
         address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmVoterRewardUpgradeRequest(uint256)", _newVoterReward);
@@ -183,6 +188,11 @@ contract SolarTokenProxy is SolarTokenStore {
     string public symbol;
     uint256 public decimals;
 
+    // uint public constant mintCycle = 126144000;
+    uint public constant mintCycle = 1800;
+    uint public kwhPerToken;
+    uint public tokenAmountPerKwh;
+
     constructor(
         address _creator,
         string _name,
@@ -193,6 +203,20 @@ contract SolarTokenProxy is SolarTokenStore {
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
+
+        refreshTokenAmountPerKwh();
+    }
+
+    function refreshTokenAmountPerKwh() public returns (bool) {
+        uint pastTime = SafeMath.sub(block.timestamp, createTime);
+        uint cycleNum = SafeMath.div(pastTime, mintCycle);
+        kwhPerToken = SafeMath.add(cycleNum, 1);
+        tokenAmountPerKwh = SafeMath.div(10 ** decimals, kwhPerToken);
+        if (tokenAmountPerKwh < 1) {
+            tokenAmountPerKwh = 1;
+            kwhPerToken = SafeMath.div(10 ** decimals, tokenAmountPerKwh);
+        }
+        return true;
     }
 
     function transfer(address _to, uint256 _value) public returns (bool) {
@@ -223,9 +247,9 @@ contract SolarTokenProxy is SolarTokenStore {
         emit Approval(_owner, _spender, _value);
     }
 
-    event MintToken(address indexed _sender, address indexed _owner, uint256 _value);
+    event MintToken(address indexed _sender, address indexed _owner, uint256 _kwh, uint256 _value);
 
-    function emitMintToken(address _sender, address _owner, uint256 _value) public onlyImpl {
-        emit MintToken(_sender, _owner, _value);
+    function emitMintToken(address _sender, address _owner, uint256 _kwh, uint256 _value) public onlyImpl {
+        emit MintToken(_sender, _owner, _kwh, _value);
     }
 }
