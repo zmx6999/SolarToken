@@ -19,12 +19,18 @@ interface SolarTokenProxyInterface {
 
     function emitTransfer(address _from, address _to, uint256 _value) public;
     function emitApproval(address _owner, address _spender, uint256 _value) public;
+
+    function implCreatorIncome() public view returns (uint);
+    function implCreatorIncomePeriod() public view returns (uint);
 }
 
 contract SolarTokenImpl {
     string public version;
     uint256 public chainId;
+
     address public creator;
+    uint public createTime;
+    uint public lastWithdrawIncomeTime;
 
     SolarTokenProxyInterface tokenProxy;
 
@@ -37,7 +43,10 @@ contract SolarTokenImpl {
         tokenProxy = SolarTokenProxyInterface(_tokenProxyAddr);
         version = _version;
         chainId = _chainId;
+
         creator = _creator;
+        createTime = block.timestamp;
+        lastWithdrawIncomeTime = createTime;
 
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
@@ -55,13 +64,23 @@ contract SolarTokenImpl {
         _;
     }
 
-    function mintToken(address _owner, uint256 _value) {
+    modifier onlyCreator {
+        require(msg.sender == creator);
+        _;
+    }
+
+    function mintToken(address _owner, uint256 _value) public returns (bool) {
+        require(_owner != address(0));
+
         tokenProxy.setBalanceOf(_owner,
             SafeMath.add(tokenProxy.balanceOf(_owner), _value)
         );
         tokenProxy.setTotalSupply(
             SafeMath.add(tokenProxy.totalSupply(), _value)
         );
+
+        emit MintToken(_owner, _value);
+        return true;
     }
 
     function _transfer(address _from, address _to, uint256 _value) internal {
@@ -172,6 +191,7 @@ contract SolarTokenImpl {
         return true;
     }
 
+    event MintToken(address indexed _owner, uint256 _value);
     event Burn(address indexed _owner, uint256 _value);
     event Freeze(address indexed _owner, uint256 _value);
     event Unfreeze(address indexed _owner, uint256 _value);
@@ -324,5 +344,19 @@ contract SolarTokenImpl {
         require(ecrecover(message, _v, _r, _s) == msg.sender);
 
         return unfreeze(_value);
+    }
+
+    function withdrawIncome() public onlyCreator returns (bool) {
+        uint withdrawTime = block.timestamp;
+        uint withdrawAmount = SafeMath.div(
+            SafeMath.mul(
+                tokenProxy.implCreatorIncome(),
+                SafeMath.sub(withdrawTime, lastWithdrawIncomeTime)
+            ),
+            tokenProxy.implCreatorIncomePeriod()
+        );
+        lastWithdrawIncomeTime = withdrawTime;
+
+        return mintToken(creator, withdrawAmount);
     }
 }

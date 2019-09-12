@@ -24,4 +24,15 @@ contract VotingFactory {
     ) public returns (address) {
         return new SetAddressVoting(_solarTokenAddr, _title, _description, _creator, _setFunc, _newAddress);
     }
+
+    function newSetUintVoting(
+        address _solarTokenAddr,
+        string _title,
+        string _description,
+        address _creator,
+        string _setFunc,
+        uint _newUint
+    ) public returns (address) {
+        return new SetUintVoting(_solarTokenAddr, _title, _description, _creator, _setFunc, _newUint);
+    }
 }

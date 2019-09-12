@@ -15,19 +15,33 @@ interface VotingFactoryInterface {
         string _setFunc,
         address _newAddress
     ) public returns (address);
+
+    function newSetUintVoting(
+        address _solarTokenAddr,
+        string _title,
+        string _description,
+        address _creator,
+        string _setFunc,
+        uint _newUint
+    ) public returns (address);
 }
 
 contract SolarTokenUpgrade {
-    SolarTokenImplInterface solarTokenImpl;
+    SolarTokenImplInterface public solarTokenImpl;
     VotingFactoryInterface votingFactory;
 
     address public creator;
     bool solarTokenImplInitialized;
 
+    mapping(address => bool) public votingList;
+
     constructor(address _creator, address _votingFactoryAddr) {
         creator = _creator;
         solarTokenImpl = SolarTokenImplInterface(address(0));
         votingFactory = VotingFactoryInterface(_votingFactoryAddr);
+
+        implCreatorIncome = 0;
+        implCreatorIncomePeriod = 1;
     }
 
     modifier onlyCreator {
@@ -55,8 +69,6 @@ contract SolarTokenUpgrade {
         solarTokenImplInitialized = true;
     }
 
-    mapping(address => bool) votingList;
-
     function makeSolarTokenImplUpgradeRequest(string _title, string _description, address _newSolarTokenImplAddr) public {
         address voting = votingFactory.newSetAddressVoting(address(this), _title, _description, msg.sender, "confirmSolarTokenImplUpgradeRequest(address)", _newSolarTokenImplAddr);
         votingList[voting] = true;
@@ -66,11 +78,44 @@ contract SolarTokenUpgrade {
     function confirmSolarTokenImplUpgradeRequest(address newSolarTokenImplAddr) public canConfirm {
         solarTokenImpl = SolarTokenImplInterface(newSolarTokenImplAddr);
         votingList[msg.sender] = false;
-        emit ConfirmSolarTokenUpgradeRequest(newSolarTokenImplAddr);
+        emit ConfirmSolarTokenImplUpgradeRequest(newSolarTokenImplAddr);
+    }
+
+    uint public implCreatorIncome;
+    uint public implCreatorIncomePeriod;
+
+    function makeImplCreatorIncomeUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncome) public {
+        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmImplCreatorIncomeUpgradeRequest(uint256)", _newImplCreatorIncome);
+        votingList[voting] = true;
+        emit MakeImplCreatorIncomeUpgradeRequest(voting, _title, _description, msg.sender, _newImplCreatorIncome);
+    }
+
+    function confirmImplCreatorIncomeUpgradeRequest(uint256 newImplCreatorIncome) public canConfirm {
+        implCreatorIncome = newImplCreatorIncome;
+        votingList[msg.sender] = false;
+        emit ConfirmImplCreatorIncomeUpgradeRequest(newImplCreatorIncome);
+    }
+
+    function makeImplCreatorIncomePeriodUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncomePeriod) public {
+        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmImplCreatorIncomePeriodUpgradeRequest(uint256)", _newImplCreatorIncomePeriod);
+        votingList[voting] = true;
+        emit MakeImplCreatorIncomePeriodUpgradeRequest(voting, _title, _description, msg.sender, _newImplCreatorIncomePeriod);
+    }
+
+    function confirmImplCreatorIncomePeriodUpgradeRequest(uint256 newImplCreatorIncomePeriod) public canConfirm {
+        implCreatorIncomePeriod = newImplCreatorIncomePeriod;
+        votingList[msg.sender] = false;
+        emit ConfirmImplCreatorIncomePeriodUpgradeRequest(newImplCreatorIncomePeriod);
     }
 
     event MakeSolarTokenImplUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, address _newSolarTokenImplAddr);
-    event ConfirmSolarTokenUpgradeRequest(address _newSolarTokenImplAddr);
+    event ConfirmSolarTokenImplUpgradeRequest(address _newSolarTokenImplAddr);
+
+    event MakeImplCreatorIncomeUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newImplCreatorIncome);
+    event ConfirmImplCreatorIncomeUpgradeRequest(uint _newImplCreatorIncome);
+
+    event MakeImplCreatorIncomePeriodUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newImplCreatorIncomePeriod);
+    event ConfirmImplCreatorIncomePeriodUpgradeRequest(uint _newImplCreatorIncomePeriod);
 }
 
 contract SolarTokenStore is SolarTokenUpgrade {

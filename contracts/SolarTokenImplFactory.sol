@@ -6,8 +6,9 @@ contract SolarTokenImplFactory {
     function newImpl(
         address _tokenProxyAddr,
         string _version,
-        uint256 _chainId
+        uint256 _chainId,
+        address _creator
     ) public returns (address) {
-        return new SolarTokenImpl(_tokenProxyAddr, _version, _chainId);
+        return new SolarTokenImpl(_tokenProxyAddr, _version, _chainId, _creator);
     }
 }

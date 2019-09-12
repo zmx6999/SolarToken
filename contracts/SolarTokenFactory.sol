@@ -18,7 +18,8 @@ interface SolarTokenImplFactoryInterface {
     function newImpl(
         address _tokenProxyAddr,
         string _version,
-        uint256 _chainId
+        uint256 _chainId,
+        address _creator
     ) public returns (address);
 }
 
@@ -52,7 +53,7 @@ contract SolarTokenFactory {
         require(!haveSolarTokenSymbol[_symbol], "symbol has been registered");
 
         address tokenProxyAddr = tokenProxyFactory.newProxy(address(this), _name, _symbol, _decimals, address(votingFactory));
-        address tokenImplAddr = tokenImplFactory.newImpl(tokenProxyAddr, _version, _chainId);
+        address tokenImplAddr = tokenImplFactory.newImpl(tokenProxyAddr, _version, _chainId, msg.sender);
 
         SolarTokenProxy(tokenProxyAddr).initSolarTokenImpl(tokenImplAddr);
 

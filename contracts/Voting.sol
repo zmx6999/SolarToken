@@ -198,8 +198,8 @@ contract ExecutiveVoting is Voting {
 }
 
 contract SetAddressVoting is ExecutiveVoting {
-    bytes4 setFunc;
-    address newAddress;
+    bytes4 public setFunc;
+    address public newAddress;
 
     constructor(
         address _solarTokenAddr,
@@ -222,6 +222,35 @@ contract SetAddressVoting is ExecutiveVoting {
     function vote(uint _optionId) public returns (bool) {
         vote_(_optionId);
         if (percent(1) >= quorum) require(solarToken.call(setFunc, newAddress));
+        return true;
+    }
+}
+
+contract SetUintVoting is ExecutiveVoting {
+    bytes4 public setFunc;
+    uint public newUint;
+
+    constructor(
+        address _solarTokenAddr,
+        string _title,
+        string _description,
+        address _creator,
+        string _setFunc,
+        uint _newUint
+    ) ExecutiveVoting(_solarTokenAddr, _title, _description, _creator) {
+        setFunc = bytes4(keccak256(_setFunc));
+        newUint = _newUint;
+    }
+
+    function lock(uint _value) public returns (bool) {
+        lock_(_value);
+        if (percent(1) >= quorum) require(solarToken.call(setFunc, newUint));
+        return true;
+    }
+
+    function vote(uint _optionId) public returns (bool) {
+        vote_(_optionId);
+        if (percent(1) >= quorum) require(solarToken.call(setFunc, newUint));
         return true;
     }
 }
