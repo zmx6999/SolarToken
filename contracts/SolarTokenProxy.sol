@@ -74,70 +74,82 @@ contract SolarTokenUpgrade {
         solarTokenImplInitialized = true;
     }
 
-    function makeSolarTokenImplUpgradeRequest(string _title, string _description, address _newSolarTokenImplAddr) public {
-        address voting = votingFactory.newSetAddressVoting(address(this), _title, _description, msg.sender, "confirmSolarTokenImplUpgradeRequest(address)", _newSolarTokenImplAddr);
-        votingList[voting] = true;
-        emit MakeSolarTokenImplUpgradeRequest(voting, _title, _description, msg.sender, _newSolarTokenImplAddr);
+    function makeSolarTokenImplUpgradeRequest(string _title, string _description, address _newSolarTokenImplAddr) public returns (bool) {
+        makeAddressUpgradeRequest("solarTokenImpl", "confirmSolarTokenImplUpgradeRequest(address)", _title, _description, _newSolarTokenImplAddr);
+        return true;
     }
 
-    function confirmSolarTokenImplUpgradeRequest(address newSolarTokenImplAddr) public canConfirm {
-        solarTokenImpl = SolarTokenImplInterface(newSolarTokenImplAddr);
-        votingList[msg.sender] = false;
-        emit ConfirmSolarTokenImplUpgradeRequest(newSolarTokenImplAddr);
+    function confirmSolarTokenImplUpgradeRequest(address _newSolarTokenImplAddr) public returns (bool) {
+        solarTokenImpl = SolarTokenImplInterface(_newSolarTokenImplAddr);
+        confirmAddressUpgradeRequest("solarTokenImpl", _newSolarTokenImplAddr);
+        return true;
     }
 
     uint public implCreatorIncome; // by kwh
     uint public implCreatorIncomePeriod;
 
-    function makeImplCreatorIncomeUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncome) public {
-        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmImplCreatorIncomeUpgradeRequest(uint256)", _newImplCreatorIncome);
-        votingList[voting] = true;
-        emit MakeImplCreatorIncomeUpgradeRequest(voting, _title, _description, msg.sender, _newImplCreatorIncome);
+    function makeImplCreatorIncomeUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncome) public returns (bool) {
+        makeUintUpgradeRequest("implCreatorIncome", "confirmImplCreatorIncomeUpgradeRequest(uint256)", _title, _description, _newImplCreatorIncome);
+        return true;
     }
 
-    function confirmImplCreatorIncomeUpgradeRequest(uint256 newImplCreatorIncome) public canConfirm {
-        implCreatorIncome = newImplCreatorIncome;
-        votingList[msg.sender] = false;
-        emit ConfirmImplCreatorIncomeUpgradeRequest(newImplCreatorIncome);
+    function confirmImplCreatorIncomeUpgradeRequest(uint256 _newImplCreatorIncome) public returns (bool) {
+        implCreatorIncome = _newImplCreatorIncome;
+        confirmUintUpgradeRequest("implCreatorIncome", _newImplCreatorIncome);
+        return true;
     }
 
-    function makeImplCreatorIncomePeriodUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncomePeriod) public {
-        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmImplCreatorIncomePeriodUpgradeRequest(uint256)", _newImplCreatorIncomePeriod);
-        votingList[voting] = true;
-        emit MakeImplCreatorIncomePeriodUpgradeRequest(voting, _title, _description, msg.sender, _newImplCreatorIncomePeriod);
+    function makeImplCreatorIncomePeriodUpgradeRequest(string _title, string _description, uint256 _newImplCreatorIncomePeriod) public returns (bool) {
+        makeUintUpgradeRequest("implCreatorIncomePeriod", "confirmImplCreatorIncomePeriodUpgradeRequest(uint256)", _title, _description, _newImplCreatorIncomePeriod);
+        return true;
     }
 
-    function confirmImplCreatorIncomePeriodUpgradeRequest(uint256 newImplCreatorIncomePeriod) public canConfirm {
-        implCreatorIncomePeriod = newImplCreatorIncomePeriod;
-        votingList[msg.sender] = false;
-        emit ConfirmImplCreatorIncomePeriodUpgradeRequest(newImplCreatorIncomePeriod);
+    function confirmImplCreatorIncomePeriodUpgradeRequest(uint256 _newImplCreatorIncomePeriod) public returns (bool) {
+        implCreatorIncomePeriod = _newImplCreatorIncomePeriod;
+        confirmUintUpgradeRequest("implCreatorIncomePeriod", _newImplCreatorIncomePeriod);
+        return true;
     }
 
     uint public voterReward; // by kwh
 
-    function makeVoterRewardUpgradeRequest(string _title, string _description, uint _newVoterReward) public {
-        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, "confirmVoterRewardUpgradeRequest(uint256)", _newVoterReward);
+    function makeVoterRewardUpgradeRequest(string _title, string _description, uint _newVoterReward) public returns (bool) {
+        makeUintUpgradeRequest("voterReward", "confirmVoterRewardUpgradeRequest(uint256)", _title, _description, _newVoterReward);
+        return true;
+    }
+
+    function confirmVoterRewardUpgradeRequest(uint _newVoterReward) public returns (bool) {
+        voterReward = _newVoterReward;
+        confirmUintUpgradeRequest("voterReward", _newVoterReward);
+        return true;
+    }
+
+    function makeAddressUpgradeRequest(string _paramName, string _setFunc, string _title, string _description, address _newAddress) internal {
+        address voting = votingFactory.newSetAddressVoting(address(this), _title, _description, msg.sender, _setFunc, _newAddress);
         votingList[voting] = true;
-        emit MakeVoterRewardUpgradeRequest(voting, _title, _description, msg.sender, _newVoterReward);
+        emit MakeAddressUpgradeRequest(_paramName, voting, _title, _description, msg.sender, _newAddress);
     }
 
-    function confirmVoterRewardUpgradeRequest(uint newVoterReward) public canConfirm {
-        voterReward = newVoterReward;
+    function confirmAddressUpgradeRequest(string _paramName, address _newAddress) internal canConfirm {
         votingList[msg.sender] = false;
-        emit ConfirmVoterRewardUpgradeRequest(newVoterReward);
+        emit ConfirmAddressUpgradeRequest(_paramName, _newAddress);
     }
 
-    event MakeSolarTokenImplUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, address _newSolarTokenImplAddr);
-    event ConfirmSolarTokenImplUpgradeRequest(address _newSolarTokenImplAddr);
+    function makeUintUpgradeRequest(string _paramName, string _setFunc, string _title, string _description, uint _newUint) internal {
+        address voting = votingFactory.newSetUintVoting(address(this), _title, _description, msg.sender, _setFunc, _newUint);
+        votingList[voting] = true;
+        emit MakeUintUpgradeRequest(_paramName, voting, _title, _description, msg.sender, _newUint);
+    }
 
-    event MakeImplCreatorIncomeUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newImplCreatorIncome);
-    event ConfirmImplCreatorIncomeUpgradeRequest(uint _newImplCreatorIncome);
+    function confirmUintUpgradeRequest(string _paramName, uint _newUint) internal canConfirm {
+        votingList[msg.sender] = false;
+        emit ConfirmUintUpgradeRequest(_paramName, _newUint);
+    }
 
-    event MakeImplCreatorIncomePeriodUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newImplCreatorIncomePeriod);
-    event ConfirmImplCreatorIncomePeriodUpgradeRequest(uint _newImplCreatorIncomePeriod);
+    event MakeAddressUpgradeRequest(string _paramName, address _votingAddr, string _title, string _description, address _creator, address _newAddress);
+    event ConfirmAddressUpgradeRequest(string _paramName, address _newAddress);
 
-    event MakeVoterRewardUpgradeRequest(address _votingAddr, string _title, string _description, address _creator, uint _newVoterReward);
-    event ConfirmVoterRewardUpgradeRequest(uint _newVoterReward);
+    event MakeUintUpgradeRequest(string _paramName, address _votingAddr, string _title, string _description, address _creator, uint _newUint);
+    event ConfirmUintUpgradeRequest(string _paramName, uint _newUint);
 }
 
 contract SolarTokenStore is SolarTokenUpgrade {

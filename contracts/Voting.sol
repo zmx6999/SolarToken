@@ -209,7 +209,7 @@ contract ExecutiveVoting is Voting {
 }
 
 contract SetAddressVoting is ExecutiveVoting {
-    bytes4 public setFunc;
+    string public setFunc;
     address public newAddress;
 
     constructor(
@@ -220,25 +220,25 @@ contract SetAddressVoting is ExecutiveVoting {
         string _setFunc,
         address _newAddress
     ) ExecutiveVoting(_solarTokenAddr, _title, _description, _creator) {
-        setFunc = bytes4(keccak256(_setFunc));
+        setFunc = _setFunc;
         newAddress = _newAddress;
     }
 
     function lock(uint _value) public returns (bool) {
         lock_(_value);
-        if (result == 1) require(solarToken.call(setFunc, newAddress));
+        if (result == 1) require(solarToken.call(bytes4(keccak256(setFunc)), newAddress));
         return true;
     }
 
     function vote(uint _optionId) public returns (bool) {
         vote_(_optionId);
-        if (result == 1) require(solarToken.call(setFunc, newAddress));
+        if (result == 1) require(solarToken.call(bytes4(keccak256(setFunc)), newAddress));
         return true;
     }
 }
 
 contract SetUintVoting is ExecutiveVoting {
-    bytes4 public setFunc;
+    string public setFunc;
     uint public newUint;
 
     constructor(
@@ -249,19 +249,19 @@ contract SetUintVoting is ExecutiveVoting {
         string _setFunc,
         uint _newUint
     ) ExecutiveVoting(_solarTokenAddr, _title, _description, _creator) {
-        setFunc = bytes4(keccak256(_setFunc));
+        setFunc = _setFunc;
         newUint = _newUint;
     }
 
     function lock(uint _value) public returns (bool) {
         lock_(_value);
-        if (result == 1) require(solarToken.call(setFunc, newUint));
+        if (result == 1) require(solarToken.call(bytes4(keccak256(setFunc)), newUint));
         return true;
     }
 
     function vote(uint _optionId) public returns (bool) {
         vote_(_optionId);
-        if (result == 1) require(solarToken.call(setFunc, newUint));
+        if (result == 1) require(solarToken.call(bytes4(keccak256(setFunc)), newUint));
         return true;
     }
 }
