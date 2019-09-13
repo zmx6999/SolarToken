@@ -7,6 +7,8 @@ interface SolarTokenImplInterface {
     function transferFrom(address _spender, address _from, address _to, uint256 _value) public returns (bool);
     function approve(address _owner, address _spender, uint256 _value) public returns (bool);
     function mintToken(address _sender, address _owner, uint256 _value) public returns (bool);
+
+    function creator() public view returns (address);
 }
 
 interface VotingFactoryInterface {
@@ -75,6 +77,7 @@ contract SolarTokenUpgrade {
     }
 
     function makeSolarTokenImplUpgradeRequest(string _title, string _description, address _newSolarTokenImplAddr) public returns (bool) {
+        require(msg.sender == SolarTokenImplInterface(_newSolarTokenImplAddr).creator());
         makeAddressUpgradeRequest("solarTokenImpl", "confirmSolarTokenImplUpgradeRequest(address)", _title, _description, _newSolarTokenImplAddr);
         return true;
     }
@@ -200,8 +203,7 @@ contract SolarTokenProxy is SolarTokenStore {
     string public symbol;
     uint256 public decimals;
 
-    // uint public constant mintCycle = 126144000;
-    uint public constant mintCycle = 1800;
+    uint public constant mintCycle = 63072000;
     uint public kwhPerToken;
     uint public tokenAmountPerKwh;
 
