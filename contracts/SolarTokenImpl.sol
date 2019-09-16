@@ -26,8 +26,9 @@ interface SolarTokenProxyInterface {
 
     function mintToken(address _owner, uint256 _value) public returns (bool);
 
-    function refreshTokenAmountPerKwh() public returns (bool);
-    function tokenAmountPerKwh() public view returns (uint256);
+    function refreshKwhPerToken() public returns (bool);
+    function kwhPerToken() public view returns (uint256);
+    function decimals() public view returns (uint256);
 }
 
 contract SolarTokenImpl {
@@ -78,9 +79,12 @@ contract SolarTokenImpl {
     function mintToken(address _sender, address _owner, uint256 _kwh) public onlyProxy returns (bool) {
         require(_owner != address(0));
 
-        tokenProxy.refreshTokenAmountPerKwh();
-        uint tokenAmountPerKwh = tokenProxy.tokenAmountPerKwh();
-        uint _value = SafeMath.mul(tokenAmountPerKwh, _kwh);
+        tokenProxy.refreshKwhPerToken();
+        uint _value = SafeMath.div(
+            SafeMath.mul(_kwh, 10 ** tokenProxy.decimals()),
+            tokenProxy.kwhPerToken()
+        );
+        if (_value == 0) return true;
 
         tokenProxy.setBalanceOf(_owner,
             SafeMath.add(tokenProxy.balanceOf(_owner), _value)
@@ -355,17 +359,37 @@ contract SolarTokenImpl {
         return unfreeze(_value);
     }
 
-    function withdrawIncome() public onlyCreator returns (bool) {
+    function withdrawIncome() public returns (bool) {
+        tokenProxy.refreshKwhPerToken();
+        uint decimals = tokenProxy.decimals();
+        uint kwhPerToken = tokenProxy.kwhPerToken();
+
         uint withdrawTime = block.timestamp;
-        uint withdrawAmount = SafeMath.div(
+        uint pastTime = SafeMath.sub(withdrawTime, lastWithdrawIncomeTime);
+        uint implCreatorIncome = tokenProxy.implCreatorIncome();
+        uint implCreatorIncomePeriod = tokenProxy.implCreatorIncomePeriod();
+
+        uint _value = SafeMath.div(
             SafeMath.mul(
-                tokenProxy.implCreatorIncome(),
-                SafeMath.sub(withdrawTime, lastWithdrawIncomeTime)
+                SafeMath.mul(implCreatorIncome, pastTime),
+                10 ** decimals
             ),
-            tokenProxy.implCreatorIncomePeriod()
+            SafeMath.mul(implCreatorIncomePeriod, kwhPerToken)
         );
+        if (_value == 0) return true;
+
         lastWithdrawIncomeTime = withdrawTime;
 
-        return tokenProxy.mintToken(creator, withdrawAmount);
+        tokenProxy.setBalanceOf(creator,
+            SafeMath.add(tokenProxy.balanceOf(creator), _value)
+        );
+        tokenProxy.setTotalSupply(
+            SafeMath.add(tokenProxy.totalSupply(), _value)
+        );
+
+        emit WithdrawIncome(_value);
+        return true;
     }
+
+    event WithdrawIncome(uint _value);
 }
