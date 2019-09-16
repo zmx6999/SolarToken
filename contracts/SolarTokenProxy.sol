@@ -210,7 +210,7 @@ contract SolarTokenProxy is SolarTokenStore {
     string public symbol;
     uint256 public decimals;
 
-    uint public constant mintCycle = 1800;
+    uint public constant mintCycle = 31536000;
     uint public kwhPerToken;
     uint public maxKwhPerToken;
 
