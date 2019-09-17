@@ -31,7 +31,7 @@ contract SolarTokenFactory {
     string[] solarTokenSymbolList;
     mapping(string => bool) haveSolarTokenSymbol;
     mapping(string => address) solarTokenProxyMap;
-    mapping(string => address) solarTokenImplMap;
+    // mapping(string => address) solarTokenImplMap;
 
     SolarTokenProxyFactoryInterface tokenProxyFactory;
     SolarTokenImplFactoryInterface tokenImplFactory;
@@ -60,7 +60,7 @@ contract SolarTokenFactory {
         solarTokenSymbolList.push(_symbol);
         haveSolarTokenSymbol[_symbol] = true;
         solarTokenProxyMap[_symbol] = tokenProxyAddr;
-        solarTokenImplMap[_symbol] = tokenImplAddr;
+        // solarTokenImplMap[_symbol] = tokenImplAddr;
 
         emit CreateToken(_name, _symbol, _decimals, _version, _chainId, msg.sender, tokenProxyAddr, tokenImplAddr);
     }
@@ -77,9 +77,9 @@ contract SolarTokenFactory {
         return solarTokenProxyMap[_symbol];
     }
 
-    function getSolarTokenImplAddr(string _symbol) public view returns (address) {
-        return solarTokenImplMap[_symbol];
-    }
+    // function getSolarTokenImplAddr(string _symbol) public view returns (address) {
+    //     return solarTokenImplMap[_symbol];
+    // }
 
     event CreateToken(
         string _name,
