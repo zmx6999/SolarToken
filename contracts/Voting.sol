@@ -120,6 +120,7 @@ contract Voting {
 
 contract RegularVoting is Voting {
     uint public duration;
+    uint public constant minDuration = 604800; // 1 week
 
     mapping(uint => bytes32) public optionList;
     uint public totalOption;
@@ -132,6 +133,8 @@ contract RegularVoting is Voting {
         uint _duration,
         bytes32[] _optionList
     ) Voting(_solarTokenAddr, _title, _description, _creator) {
+        require(_duration >= minDuration);
+
         duration = _duration;
 
         uint i = 0;
@@ -142,7 +145,7 @@ contract RegularVoting is Voting {
             }
             i = SafeMath.add(i, 1);
         }
-        require(totalOption >= 2);
+        require(totalOption >= 2 && totalOption <= 10);
     }
 
     function lock(uint _value) public returns (bool) {
