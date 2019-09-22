@@ -221,6 +221,8 @@ contract SolarTokenProxy is SolarTokenStore {
         uint256 _decimals,
         address _votingFactoryAddr
     ) SolarTokenStore(_creator, _votingFactoryAddr) {
+        require(_decimals <= 18);
+
         name = _name;
         symbol = _symbol;
         decimals = _decimals;
@@ -229,10 +231,15 @@ contract SolarTokenProxy is SolarTokenStore {
     }
 
     function refreshKwhPerToken() public returns (bool) {
+        maxKwhPerToken = 10 ** decimals;
+        if (kwhPerToken >= maxKwhPerToken) {
+            kwhPerToken = maxKwhPerToken;
+            return true;
+        }
+
         uint pastTime = SafeMath.sub(block.timestamp, createTime);
         uint cycleNum = SafeMath.div(pastTime, mintCycle);
         kwhPerToken = SafeMath.add(cycleNum, 1);
-        maxKwhPerToken = 10 ** decimals;
         if (kwhPerToken > maxKwhPerToken) kwhPerToken = maxKwhPerToken;
         return true;
     }
