@@ -200,7 +200,8 @@ contract SolarToken is SolarTokenUpgrade {
 
         uint pastTime = SafeMath.sub(block.timestamp, createTime);
         uint cycleNum = SafeMath.div(pastTime, mintCycle);
-        kwhPerToken = SafeMath.add(cycleNum, 1);
+        if (cycleNum > 255) cycleNum = 255;
+        kwhPerToken = 2 ** cycleNum;
         if (kwhPerToken > maxKwhPerToken) kwhPerToken = maxKwhPerToken;
         return true;
     }
