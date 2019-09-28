@@ -120,7 +120,8 @@ contract Voting {
 
 contract RegularVoting is Voting {
     uint public duration;
-    uint public constant minDuration = 604800; // 1 week
+    // uint public constant minDuration = 604800; // 1 week
+    uint public constant minDuration = 1200;
 
     mapping(uint => bytes32) public optionList;
     uint public totalOption;

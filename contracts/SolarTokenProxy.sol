@@ -38,12 +38,10 @@ contract SolarTokenUpgrade {
     address public creator;
     uint public createTime;
 
-    bool solarTokenImplInitialized;
-
     mapping(address => bool) public votingList;
 
-    constructor(address _creator, address _votingFactoryAddr) {
-        creator = _creator;
+    constructor(address _votingFactoryAddr) {
+        creator = msg.sender;
         createTime = block.timestamp;
         solarTokenImpl = SolarTokenImplInterface(address(0));
         votingFactory = VotingFactoryInterface(_votingFactoryAddr);
@@ -56,13 +54,18 @@ contract SolarTokenUpgrade {
         _;
     }
 
-    modifier notInitialized {
-        require(!solarTokenImplInitialized, "address has been initialized");
+    modifier tokenImplInitialized {
+        require(solarTokenImpl != address(0), "solarTokenImpl has not been initialized");
+        _;
+    }
+
+    modifier tokenImplNotInitialized {
+        require(solarTokenImpl == address(0), "solarTokenImpl has been initialized");
         _;
     }
 
     modifier onlyImpl {
-        require(msg.sender == address(solarTokenImpl), "permission denied");
+        require(address(solarTokenImpl) != address(0) && msg.sender == address(solarTokenImpl), "permission denied");
         _;
     }
 
@@ -74,13 +77,14 @@ contract SolarTokenUpgrade {
     SolarTokenImplInterface public solarTokenImpl;
     mapping(address => bool) solarTokenImplHistory;
 
-    function initSolarTokenImpl(address _solarTokenImplAddr) public onlyCreator notInitialized {
+    function initSolarTokenImpl(address _solarTokenImplAddr) public onlyCreator tokenImplNotInitialized {
+        require(_solarTokenImplAddr != address(0));
         solarTokenImpl = SolarTokenImplInterface(_solarTokenImplAddr);
-        solarTokenImplInitialized = true;
         solarTokenImplHistory[_solarTokenImplAddr] = true;
     }
 
     function makeSolarTokenImplUpgradeRequest(string _title, string _description, address _newSolarTokenImplAddr) public returns (bool) {
+        require(_newSolarTokenImplAddr != address(0));
         require(!solarTokenImplHistory[_newSolarTokenImplAddr]);
         require(msg.sender == SolarTokenImplInterface(_newSolarTokenImplAddr).creator());
         makeAddressUpgradeRequest("solarTokenImpl", "confirmSolarTokenImplUpgradeRequest(address)", _title, _description, _newSolarTokenImplAddr);
@@ -162,15 +166,58 @@ contract SolarTokenUpgrade {
     event ConfirmUintUpgradeRequest(string _paramName, uint _newUint);
 }
 
-contract SolarTokenStore is SolarTokenUpgrade {
+contract SolarToken is SolarTokenUpgrade {
+    string public name;
+    string public symbol;
+    uint256 public decimals;
+
+    // uint public constant mintCycle = 31536000; // 365 days
+    uint public constant mintCycle = 1800;
+    uint public kwhPerToken;
+    uint public maxKwhPerToken;
+
+    constructor(
+        string _name,
+        string _symbol,
+        uint256 _decimals,
+        address _votingFactoryAddr
+    ) SolarTokenUpgrade(_votingFactoryAddr) {
+        require(_decimals <= 18);
+
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+
+        refreshKwhPerToken();
+    }
+
+    function refreshKwhPerToken() public returns (bool) {
+        maxKwhPerToken = 10 ** decimals;
+        if (kwhPerToken >= maxKwhPerToken) {
+            kwhPerToken = maxKwhPerToken;
+            return true;
+        }
+
+        uint pastTime = SafeMath.sub(block.timestamp, createTime);
+        uint cycleNum = SafeMath.div(pastTime, mintCycle);
+        kwhPerToken = SafeMath.add(cycleNum, 1);
+        if (kwhPerToken > maxKwhPerToken) kwhPerToken = maxKwhPerToken;
+        return true;
+    }
+}
+
+contract SolarTokenStore is SolarToken {
     uint256 private _totalSupply;
     mapping(address => uint256) private _balanceOf;
     mapping(address => mapping(address => uint256)) private _allowance;
     mapping(address => uint256) private _freezeOf;
 
-    constructor(address _creator, address _votingFactoryAddr) SolarTokenUpgrade(_creator, _votingFactoryAddr) {
-
-    }
+    constructor(
+        string _name,
+        string _symbol,
+        uint256 _decimals,
+        address _votingFactoryAddr
+    ) SolarToken(_name, _symbol, _decimals, _votingFactoryAddr) {}
 
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
@@ -206,58 +253,26 @@ contract SolarTokenStore is SolarTokenUpgrade {
 }
 
 contract SolarTokenProxy is SolarTokenStore {
-    string public name;
-    string public symbol;
-    uint256 public decimals;
-
-    uint public constant mintCycle = 31536000; // 365 days
-    uint public kwhPerToken;
-    uint public maxKwhPerToken;
-
     constructor(
-        address _creator,
         string _name,
         string _symbol,
         uint256 _decimals,
         address _votingFactoryAddr
-    ) SolarTokenStore(_creator, _votingFactoryAddr) {
-        require(_decimals <= 18);
+    ) SolarTokenStore(_name, _symbol, _decimals, _votingFactoryAddr) {}
 
-        name = _name;
-        symbol = _symbol;
-        decimals = _decimals;
-
-        refreshKwhPerToken();
-    }
-
-    function refreshKwhPerToken() public returns (bool) {
-        maxKwhPerToken = 10 ** decimals;
-        if (kwhPerToken >= maxKwhPerToken) {
-            kwhPerToken = maxKwhPerToken;
-            return true;
-        }
-
-        uint pastTime = SafeMath.sub(block.timestamp, createTime);
-        uint cycleNum = SafeMath.div(pastTime, mintCycle);
-        if (cycleNum > 255) cycleNum = 255;
-        kwhPerToken = 2 ** cycleNum;
-        if (kwhPerToken > maxKwhPerToken) kwhPerToken = maxKwhPerToken;
-        return true;
-    }
-
-    function transfer(address _to, uint256 _value) public returns (bool) {
+    function transfer(address _to, uint256 _value) public tokenImplInitialized returns (bool) {
         return solarTokenImpl.transfer(msg.sender, _to, _value);
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+    function transferFrom(address _from, address _to, uint256 _value) public tokenImplInitialized returns (bool) {
         return solarTokenImpl.transferFrom(msg.sender, _from, _to, _value);
     }
 
-    function approve(address _spender, uint256 _value) public returns (bool) {
+    function approve(address _spender, uint256 _value) public tokenImplInitialized returns (bool) {
         return solarTokenImpl.approve(msg.sender, _spender, _value);
     }
 
-    function mintToken(address _owner, uint256 _value) public returns (bool) {
+    function mintToken(address _owner, uint256 _value) public tokenImplInitialized returns (bool) {
         return solarTokenImpl.mintToken(msg.sender, _owner, _value);
     }
 

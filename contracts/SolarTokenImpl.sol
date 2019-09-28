@@ -44,14 +44,13 @@ contract SolarTokenImpl {
     constructor(
         address _tokenProxyAddr,
         string _version,
-        uint256 _chainId,
-        address _creator
+        uint256 _chainId
     ) {
         tokenProxy = SolarTokenProxyInterface(_tokenProxyAddr);
         version = _version;
         chainId = _chainId;
 
-        creator = _creator;
+        creator = msg.sender;
         createTime = block.timestamp;
         lastWithdrawIncomeTime = createTime;
 
