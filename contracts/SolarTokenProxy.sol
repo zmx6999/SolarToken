@@ -171,8 +171,7 @@ contract SolarToken is SolarTokenUpgrade {
     string public symbol;
     uint256 public decimals;
 
-    // uint public constant mintCycle = 31536000; // 365 days
-    uint public constant mintCycle = 1800;
+    uint public constant mintCycle = 31536000; // 365 days
     uint public kwhPerToken;
     uint public maxKwhPerToken;
 
